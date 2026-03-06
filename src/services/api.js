@@ -1,17 +1,11 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:15000'
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.mpsnewton.com'
 
-const getAgentToken = () => {
-    return localStorage.getItem('agent_token')
-}
-
-const getAgentId = () => {
-    return localStorage.getItem('agent_id')
-}
+const getAgentToken = () => localStorage.getItem('agent_token')
+const getAgentId = () => localStorage.getItem('agent_id')
 
 async function fetchAPI(endpoint, options = {}) {
     const url = `${API_URL}${endpoint}`
     const token = getAgentToken()
-    const agentId = getAgentId()
 
     const headers = {
         'Content-Type': 'application/json',
@@ -19,13 +13,10 @@ async function fetchAPI(endpoint, options = {}) {
         ...options.headers
     }
 
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-    }
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
     try {
         const res = await fetch(url, { headers, ...options })
-
         if (!res.ok) {
             if (res.status === 401) {
                 localStorage.removeItem('agent_token')
@@ -33,13 +24,10 @@ async function fetchAPI(endpoint, options = {}) {
                 window.location.href = '/login'
                 throw new Error('Session expired')
             }
-
             const error = await res.text()
             throw new Error(error || `API Error ${res.status}`)
         }
-
-        const data = await res.json()
-        return data
+        return await res.json()
     } catch (error) {
         console.error('API Error:', error)
         throw error
@@ -47,23 +35,23 @@ async function fetchAPI(endpoint, options = {}) {
 }
 
 export const api = {
-    // ========== AUTH ==========
+    // AUTH
     login: (agentId, apiKey) =>
         fetchAPI('/api/agents/agent-login', {
             method: 'POST',
-            body: JSON.stringify({
-                agent_id: agentId, 
-                api_key: apiKey
-            })
+            body: JSON.stringify({ agent_id: agentId, api_key: apiKey })
         }),
 
-    // ========== AGENT ==========
-    getAgent: (agentId) =>
-        fetchAPI(`/api/agents/${agentId}`),
+    // AGENT
+    getAgent: (agentId) => fetchAPI(`/api/agents/${agentId}`),
 
-    // ========== PRINTERS ==========
-    getAllPrinters: () =>
-        fetchAPI('/api/printers'),
+    // PRINTERS (pake API key)
+    getAgentPrinters: (agentId, apiKey) => {
+        const url = `${API_URL}/api/agents/${agentId}/printers`
+        return fetch(url, {
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
+        }).then(res => res.ok ? res.json() : Promise.reject(res))
+    },
 
     pausePrinter: (agentId, printerName) =>
         fetchAPI(`/api/agents/${agentId}/printer/pause`, {
@@ -77,15 +65,16 @@ export const api = {
             body: JSON.stringify({ printerName })
         }),
 
-    // ========== REPORTS ==========
-    getAgentDailyReports: (agentId, params = {}) => {
-        const queryString = new URLSearchParams({
-            page: params.page || 1,
-            limit: params.limit || 30,
-            ...(params.startDate && { startDate: params.startDate }),
-            ...(params.endDate && { endDate: params.endDate })
-        }).toString()
+    // REPORTS
+    getDailyReport: (params = {}) => {
+        const query = new URLSearchParams()
+        if (params.date) query.append('date', params.date)
+        if (params.agentId) query.append('agentId', params.agentId)
+        if (params.page) query.append('page', params.page)
+        if (params.limit) query.append('limit', params.limit)
+        if (params.startDate) query.append('startDate', params.startDate)
+        if (params.endDate) query.append('endDate', params.endDate)
 
-        return fetchAPI(`/api/agents/${agentId}/daily-reports${queryString ? `?${queryString}` : ''}`)
-    }
+        return fetchAPI(`/api/reports/daily${query.toString() ? `?${query}` : ''}`)
+    },
 }

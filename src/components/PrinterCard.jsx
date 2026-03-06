@@ -40,8 +40,30 @@ const PrinterCard = ({ printer, onClick }) => {
 
   const hasInkData = Object.keys(inkLevels).length > 0
 
+  const getInkAlert = () => {
+    if (printer.printer_status_detail === 'no_ink') {
+      return (
+        <div className="mb-3 p-2 bg-rose-50 rounded-lg border border-rose-200">
+          <p className="text-xs font-bold text-rose-600">
+            No Ink - {printer.low_ink_colors?.join(', ') || 'Unknown'}
+          </p>
+        </div>
+      )
+    }
+    if (printer.printer_status_detail === 'low_ink') {
+      return (
+        <div className="mb-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs font-bold text-amber-600">
+            Low Ink - {printer.low_ink_colors?.join(', ') || 'Unknown'}
+          </p>
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
-    <motion.div 
+    <motion.div
       layout
       onClick={onClick}
       className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-105"
@@ -65,12 +87,13 @@ const PrinterCard = ({ printer, onClick }) => {
         <ChevronRight size={20} className="text-slate-400" />
       </div>
 
+      {getInkAlert()}
+
       {hasInkData && (
         <div className="space-y-4">
           {Object.entries(inkLevels).map(([color, level]) => {
             if (color === 'drum') return null
             const levelNum = parseInt(level) || 0
-            if (levelNum <= 0) return null
 
             let bgColor = 'bg-slate-900'
             if (color.toLowerCase().includes('cyan')) bgColor = 'bg-cyan-400'
@@ -79,7 +102,7 @@ const PrinterCard = ({ printer, onClick }) => {
             else if (color.toLowerCase().includes('black')) bgColor = 'bg-slate-900'
 
             return (
-              <InkLevelIndicator 
+              <InkLevelIndicator
                 key={color}
                 label={color}
                 percentage={levelNum}
@@ -93,7 +116,7 @@ const PrinterCard = ({ printer, onClick }) => {
       <div className="mt-6 pt-6 border-t border-slate-50 flex justify-between items-center">
         <div className="flex items-center gap-2 text-slate-500">
           <FileText size={14} />
-          <span className="text-xs font-medium">{printer.pagesToday?.toLocaleString() || 0} pages today</span>
+          <span className="text-xs font-medium">{printer.pages_today?.toLocaleString() || 0} pages today</span>
         </div>
         <span className="text-[10px] font-medium text-slate-400 uppercase">
           {printer.location || printer.department || 'Office'}

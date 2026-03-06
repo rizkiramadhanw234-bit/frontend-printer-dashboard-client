@@ -8,22 +8,31 @@ export const PRINTER_STATUS = {
   WARNING: 'WARNING'
 }
 
-export const INK_COLORS = {
-  CYAN: { label: 'Cyan', bg: 'bg-cyan-400' },
-  MAGENTA: { label: 'Magenta', bg: 'bg-pink-500' },
-  YELLOW: { label: 'Yellow', bg: 'bg-yellow-400' },
-  BLACK: { label: 'Black', bg: 'bg-slate-900' }
+// 🔥 TAMBAHKAN STATUS DETAIL DARI BACKEND
+export const PRINTER_STATUS_DETAIL = {
+  READY: 'ready',
+  PRINTING: 'printing',
+  OFFLINE: 'offline',
+  PAUSED: 'paused',
+  PAPER_JAM: 'paper_jam',
+  OUT_OF_PAPER: 'out_of_paper',
+  DOOR_OPEN: 'door_open',
+  LOW_INK: 'low_ink',
+  NO_INK: 'no_ink',
+  ERROR_OTHER: 'error_other',
+  UNKNOWN: 'unknown'
 }
 
-export const DATE_RANGES = [
-  { value: '7', label: 'Last 7 days' },
-  { value: '30', label: 'Last 30 days' },
-  { value: '90', label: 'Last 90 days' }
-]
+export const INK_COLORS = {
+  black: { label: 'Black', bg: 'bg-slate-900', text: 'text-white' },
+  cyan: { label: 'Cyan', bg: 'bg-cyan-400', text: 'text-white' },
+  magenta: { label: 'Magenta', bg: 'bg-pink-500', text: 'text-white' },
+  yellow: { label: 'Yellow', bg: 'bg-yellow-400', text: 'text-slate-900' },
+  drum: { label: 'Drum', bg: 'bg-purple-500', text: 'text-white' }
+}
 
-export const REFRESH_INTERVALS = [
-  { value: 3000, label: '3 seconds' },
-  { value: 5000, label: '5 seconds' },
-  { value: 10000, label: '10 seconds' },
-  { value: 30000, label: '30 seconds' }
-]
+export const INK_THRESHOLDS = {
+  CRITICAL: 10,
+  LOW: 15,
+  NORMAL: 100
+}

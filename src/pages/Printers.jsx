@@ -115,7 +115,7 @@ const Printers = () => {
               {filteredPrinters.map((printer) => (
                 <div 
                   key={printer.id} 
-                  onClick={() => setSelectedPrinter(printer)}  // ← klik card buka modal
+                  onClick={() => setSelectedPrinter(printer)} 
                   className="cursor-pointer"
                 >
                   <PrinterCard printer={printer} />

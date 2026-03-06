@@ -42,6 +42,19 @@ const Dashboard = () => {
     const stats = getStats()
 
     useEffect(() => {
+        console.log('🖨️ Printers from store:', printers)
+        console.log('📊 Stats from getStats():', stats)
+        printers.forEach((p, i) => {
+            console.log(`Printer ${i}:`, {
+                name: p.name,
+                printer_status_detail: p.printer_status_detail,
+                low_ink_colors: p.low_ink_colors,
+                ink_levels: p.ink_levels
+            })
+        })
+    }, [printers, stats])
+
+    useEffect(() => {
         loadAgentData()
         fetchReports({ limit: 7 })
     }, [])
@@ -70,36 +83,36 @@ const Dashboard = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className='hover:scale-105 transition-all cursor-pointer'>
-                <StatCard
-                    title="Total Prints Today"
-                    value={stats.pagesToday.toLocaleString()}
-                    icon={FileText}
-                    color="bg-indigo-600"
-                />
+                    <StatCard
+                        title="Total Prints Today"
+                        value={stats.pagesToday.toLocaleString()}
+                        icon={FileText}
+                        color="bg-indigo-600"
+                    />
                 </div>
                 <div className='hover:scale-105 transition-all cursor-pointer'>
-                <StatCard
-                    title="Active Printers"
-                    value={`${stats.online} / ${stats.total}`}
-                    icon={Printer}
-                    color="bg-emerald-500"
-                />
+                    <StatCard
+                        title="Active Printers"
+                        value={`${stats.online} / ${stats.total}`}
+                        icon={Printer}
+                        color="bg-emerald-500"
+                    />
                 </div>
                 <div className='hover:scale-105 transition-all cursor-pointer'>
-                <StatCard
-                    title="Low Ink Alerts"
-                    value={stats.lowInk + stats.criticalInk}
-                    icon={Droplets}
-                    color="bg-amber-500"
-                />
+                    <StatCard
+                        title="Low Ink Alerts"
+                        value={stats.lowInk + stats.criticalInk}
+                        icon={Droplets}
+                        color="bg-amber-500"
+                    />
                 </div>
                 <div className='hover:scale-105 transition-all cursor-pointer'>
-                <StatCard
-                    title="System Status"
-                    value={stats.offline > 0 ? 'Issues' : 'Healthy'}
-                    icon={Activity}
-                    color="bg-slate-900"
-                />
+                    <StatCard
+                        title="System Status"
+                        value={stats.offline > 0 ? 'Issues' : 'Healthy'}
+                        icon={Activity}
+                        color="bg-slate-900"
+                    />
                 </div>
             </div>
 
@@ -166,8 +179,8 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
-                                        {reports.slice(0, 5).map((report) => (
-                                            <tr key={report.id} className="hover:bg-slate-50/50 transition-colors">
+                                        {reports.slice(0, 5).map((report, index) => (
+                                            <tr key={report.id || `report-${index}`} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="py-4 text-sm font-medium text-slate-900">
                                                     {new Date(report.report_date).toLocaleDateString()}
                                                 </td>
