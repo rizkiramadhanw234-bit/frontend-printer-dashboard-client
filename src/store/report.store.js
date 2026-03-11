@@ -2,9 +2,19 @@ import { create } from "zustand";
 import { api } from "../services/api";
 
 export const useReportStore = create((set, get) => ({
+    //  State 
     reports: [],
     dailyReport: null,
-    summary: { totalPages: 0, averagePages: 0, maxPages: 0, minPages: 0, daysWithData: 0 },
+    monthlyReport: null,
+
+    summary: {
+        totalPages: 0,
+        averagePages: 0,
+        maxPages: 0,
+        minPages: 0,
+        daysWithData: 0,
+    },
+
     pagination: { page: 1, limit: 10, totalPages: 1, total: 0 },
     isLoading: false,
     error: null,
@@ -12,70 +22,140 @@ export const useReportStore = create((set, get) => ({
     fetchReports: async (params = {}) => {
         try {
             set({ isLoading: true, error: null });
-            const response = await api.getDailyReport(params);
-            console.log('📊 RAW daily report response:', response);
 
-            // Ekstrak array reports dari response.byPrinter (struktur backend)
-            let reportsData = [];
-            if (response.byPrinter && Array.isArray(response.byPrinter)) {
-                reportsData = response.byPrinter;
-            } else if (response.printers && Array.isArray(response.printers)) {
-                reportsData = response.printers;
-            } else if (response.reports && Array.isArray(response.reports)) {
-                reportsData = response.reports;
-            }
+            const agentId = localStorage.getItem("agent_id");
+            const days = parseInt(params.limit) || 7;
 
-            // Normalisasi setiap report
-            const normalizedReports = reportsData.map((r, index) => ({
-                id: r.id || `${response.date}-${r.name || r.printer_name || index}`,
-                report_date: response.date,
-                total_pages: parseInt(r.pages) || 0,   // pastikan angka
-                printer_count: 1,
-                bw_pages: r.bw_pages || 0,
-                color_pages: r.color_pages || 0,
-                printer_name: r.name || r.printer_name,
-            }));
+            // Buat array tanggal N hari ke belakang
+            const dates = Array.from({ length: days }, (_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (days - 1 - i));
+                return d.toISOString().split("T")[0];
+            });
 
-            // Hitung totalPages dari response (bisa string, konversi ke number)
-            const totalPages = parseInt(response.totalPages) || 0;
-            const pagesValues = normalizedReports.map(r => r.total_pages);
+            // Fetch semua hari paralel
+            const responses = await Promise.allSettled(
+                dates.map((date) =>
+                    api.getDailyReport({ date, agentId: agentId || undefined })
+                )
+            );
+
+            const normalizedReports = responses.map((res, i) => {
+                const date = dates[i];
+                if (res.status === "rejected" || !res.value?.success) {
+                    return { id: date, report_date: date, total_pages: 0, printer_count: 0, bw_pages: 0, color_pages: 0 };
+                }
+                const r = res.value;
+                const totalPages = parseInt(r.totalPages) || 0;
+                const printerCount = r.printerCount || (r.byPrinter?.length ?? 0);
+
+                const bwPages = r.byPrinter?.reduce((sum, p) => sum + (parseInt(p.bw_pages) || 0), 0) ?? 0;
+                const colorPages = r.byPrinter?.reduce((sum, p) => sum + (parseInt(p.color_pages) || 0), 0) ?? 0;
+
+                return {
+                    id: date,
+                    report_date: date,
+                    total_pages: totalPages,
+                    printer_count: printerCount,
+                    bw_pages: bwPages,
+                    color_pages: colorPages,
+                };
+            });
+
+            const pagesValues = normalizedReports.map((r) => r.total_pages);
+            const totalPages = pagesValues.reduce((a, b) => a + b, 0);
+            const daysWithData = normalizedReports.filter((r) => r.total_pages > 0).length;
 
             set({
                 reports: normalizedReports,
-                dailyReport: response,
                 summary: {
                     totalPages,
-                    averagePages: normalizedReports.length ? Math.round(totalPages / normalizedReports.length) : 0,
+                    averagePages: daysWithData ? Math.round(totalPages / daysWithData) : 0,
                     maxPages: Math.max(...pagesValues, 0),
-                    minPages: Math.min(...pagesValues, Infinity) || 0,
-                    daysWithData: normalizedReports.length
+                    minPages: daysWithData ? Math.min(...pagesValues.filter((v) => v > 0)) : 0,
+                    daysWithData,
                 },
-                isLoading: false
+                isLoading: false,
             });
 
-            console.log('✅ Reports setelah normalisasi:', normalizedReports);
-            return response;
+            return normalizedReports;
         } catch (error) {
-            console.error("Failed to fetch daily report:", error);
+            console.error("Failed to fetch reports:", error);
             set({ error: error.message, isLoading: false });
             throw error;
         }
     },
 
+    // ── Fetch single day detail ────────────────────────────────────────────────
+    fetchDailyDetail: async (date) => {
+        try {
+            set({ isLoading: true, error: null });
+            const agentId = localStorage.getItem("agent_id");
+            const response = await api.getDailyReport({
+                date,
+                agentId: agentId || undefined,
+            });
+            set({ dailyReport: response, isLoading: false });
+            return response;
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            throw error;
+        }
+    },
+
+    // ── Fetch monthly ──────────────────────────────────────────────────────────
+    fetchMonthlyReport: async (year, month) => {
+        try {
+            set({ isLoading: true, error: null });
+            const agentId = localStorage.getItem("agent_id");
+            const response = await api.getMonthlyReport(year, month, {
+                agentId: agentId || undefined,
+            });
+            set({ monthlyReport: response, isLoading: false });
+            return response;
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            throw error;
+        }
+    },
+
+    // ── Chart helpers ──────────────────────────────────────────────────────────
     getChartData: () => {
-        const reports = get().reports;
-        // Jika reports hanya berisi satu hari, chartData hanya satu titik.
-        // Untuk chart 7 hari, kita perlu mengambil data dari 7 hari berbeda.
-        // Tapi karena fetchReports hanya mengambil satu hari, kita perlu mengubah endpoint
-        // untuk mengambil beberapa hari. Sementara, kita bisa menggunakan data dari summary.
-        // Alternatif: gunakan data dari response yang mungkin sudah menyediakan daily breakdown.
-        // Di sini kita asumsikan reports adalah array per hari (jika ada).
-        return reports.map(r => ({
-            date: new Date(r.report_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
-            pages: r.total_pages || 0
+        return get().reports.map((r) => ({
+            date: new Date(r.report_date).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "short",
+            }),
+            pages: r.total_pages,
         }));
     },
 
-    goToPage: (page) => set(state => ({ pagination: { ...state.pagination, page } })),
-    reset: () => set({ reports: [], dailyReport: null, summary: {}, pagination: { page: 1, limit: 10, totalPages: 1, total: 0 }, isLoading: false, error: null })
+    getMonthlyChartData: () => {
+        const report = get().monthlyReport;
+        if (!report?.dailyBreakdown) return [];
+        return report.dailyBreakdown.map((d) => ({
+            date: new Date(d.print_date).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "short",
+            }),
+            pages: parseInt(d.total_pages) || 0,
+            printers: d.active_printers || 0,
+        }));
+    },
+
+    // ── Pagination ─────────────────────────────────────────────────────────────
+    goToPage: (page) =>
+        set((state) => ({ pagination: { ...state.pagination, page } })),
+
+    // ── Reset ──────────────────────────────────────────────────────────────────
+    reset: () =>
+        set({
+            reports: [],
+            dailyReport: null,
+            monthlyReport: null,
+            summary: { totalPages: 0, averagePages: 0, maxPages: 0, minPages: 0, daysWithData: 0 },
+            pagination: { page: 1, limit: 10, totalPages: 1, total: 0 },
+            isLoading: false,
+            error: null,
+        }),
 }));

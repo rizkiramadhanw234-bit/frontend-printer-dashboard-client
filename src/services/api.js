@@ -10,13 +10,14 @@ async function fetchAPI(endpoint, options = {}) {
     const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        ...options.headers
+        ...options.headers,
     }
 
     if (token) headers['Authorization'] = `Bearer ${token}`
 
     try {
         const res = await fetch(url, { headers, ...options })
+
         if (!res.ok) {
             if (res.status === 401) {
                 localStorage.removeItem('agent_token')
@@ -27,6 +28,7 @@ async function fetchAPI(endpoint, options = {}) {
             const error = await res.text()
             throw new Error(error || `API Error ${res.status}`)
         }
+
         return await res.json()
     } catch (error) {
         console.error('API Error:', error)
@@ -35,37 +37,40 @@ async function fetchAPI(endpoint, options = {}) {
 }
 
 export const api = {
-    // AUTH
+    // ── AUTH ───────────────────────────────────────────────────────────────────
     login: (agentId, apiKey) =>
         fetchAPI('/api/agents/agent-login', {
             method: 'POST',
-            body: JSON.stringify({ agent_id: agentId, api_key: apiKey })
+            body: JSON.stringify({ agent_id: agentId, api_key: apiKey }),
         }),
 
-    // AGENT
+    // ── AGENT ──────────────────────────────────────────────────────────────────
     getAgent: (agentId) => fetchAPI(`/api/agents/${agentId}`),
 
-    // PRINTERS (pake API key)
+    // ── PRINTERS ───────────────────────────────────────────────────────────────
     getAgentPrinters: (agentId, apiKey) => {
         const url = `${API_URL}/api/agents/${agentId}/printers`
         return fetch(url, {
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
-        }).then(res => res.ok ? res.json() : Promise.reject(res))
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+        }).then((res) => (res.ok ? res.json() : Promise.reject(res)))
     },
 
     pausePrinter: (agentId, printerName) =>
         fetchAPI(`/api/agents/${agentId}/printer/pause`, {
             method: 'POST',
-            body: JSON.stringify({ printerName })
+            body: JSON.stringify({ printerName }),
         }),
 
     resumePrinter: (agentId, printerName) =>
         fetchAPI(`/api/agents/${agentId}/printer/resume`, {
             method: 'POST',
-            body: JSON.stringify({ printerName })
+            body: JSON.stringify({ printerName }),
         }),
 
-    // REPORTS
+    // ── REPORTS ────────────────────────────────────────────────────────────────
     getDailyReport: (params = {}) => {
         const query = new URLSearchParams()
         if (params.date) query.append('date', params.date)
@@ -74,7 +79,13 @@ export const api = {
         if (params.limit) query.append('limit', params.limit)
         if (params.startDate) query.append('startDate', params.startDate)
         if (params.endDate) query.append('endDate', params.endDate)
-
         return fetchAPI(`/api/reports/daily${query.toString() ? `?${query}` : ''}`)
+    },
+
+    getMonthlyReport: (year, month, params = {}) => {
+        const query = new URLSearchParams({ year, month })
+        if (params.agentId) query.append('agentId', params.agentId)
+        if (params.companyId) query.append('companyId', params.companyId)
+        return fetchAPI(`/api/reports/monthly?${query.toString()}`)
     },
 }

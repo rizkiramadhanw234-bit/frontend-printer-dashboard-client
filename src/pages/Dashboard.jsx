@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     FileText,
@@ -22,6 +22,13 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import { useAgentStore } from '../store/agent.store'
 import { useReportStore } from '../store/report.store'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { cn } from '../lib/utils'
+
+const CHART_MODES = [
+    { key: 'daily', label: 'Daily', days: 1 },
+    { key: 'weekly', label: 'Weekly', days: 7 },
+    { key: 'monthly', label: 'Monthly', days: 30 },
+]
 
 const Dashboard = () => {
     const navigate = useNavigate()
@@ -41,22 +48,11 @@ const Dashboard = () => {
     const { lastMessage } = useWebSocket()
     const stats = getStats()
 
-    useEffect(() => {
-        console.log('🖨️ Printers from store:', printers)
-        console.log('📊 Stats from getStats():', stats)
-        printers.forEach((p, i) => {
-            console.log(`Printer ${i}:`, {
-                name: p.name,
-                printer_status_detail: p.printer_status_detail,
-                low_ink_colors: p.low_ink_colors,
-                ink_levels: p.ink_levels
-            })
-        })
-    }, [printers, stats])
+    const [chartMode, setChartMode] = useState('weekly')
 
     useEffect(() => {
         loadAgentData()
-        fetchReports({ limit: 7 })
+        fetchReports({ limit: 7 }) // default weekly
     }, [])
 
     useEffect(() => {
@@ -64,6 +60,11 @@ const Dashboard = () => {
             loadAgentData()
         }
     }, [lastMessage])
+
+    const handleChartMode = (mode) => {
+        setChartMode(mode.key)
+        fetchReports({ limit: mode.days })
+    }
 
     if (agentLoading && !printers.length) {
         return <LoadingSpinner />
@@ -119,22 +120,43 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Charts Section */}
                 <div className="lg:col-span-2 space-y-8">
-                    {chartData.length > 0 && (
-                        <section className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                            <div className='flex max-w-oo7xl gap-4'>
-                                <h3 className="text-lg font-bold text-slate-900 mb-6">Print Volume (7 Hari Terakhir)</h3>
-                                <div className='bg-blue-700 flex items-center justify-center px-4 py-2 rounded-xl cursor-pointer hover:bg-blue-600 hover:scale-105 transition-all'>
-                                    <p className=' text-white text-sm'>Daily</p>
-                                </div>
-                                <div className='bg-blue-700 flex items-center justify-center px-4 py-2 rounded-xl cursor-pointer hover:bg-blue-600 hover:scale-105 transition-all'>
-                                    <p className=' text-white text-sm'>Weekly</p>
-                                </div>
-                                <div className='bg-blue-700 flex items-center justify-center px-4 py-2 rounded-xl cursor-pointer hover:bg-blue-600 hover:scale-105 transition-all'>
-                                    <p className='text-white'>Montly</p>
-                                </div>
-                            </div>
+                    <section className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                        <div className='flex items-center gap-4 mb-6'>
+                            <h3 className="text-lg font-bold text-slate-900 flex-1">
+                                Print Volume
+                                <span className="text-slate-400 font-normal text-sm ml-2">
+                                    {chartMode === 'daily' && '(Hari Ini)'}
+                                    {chartMode === 'weekly' && '(7 Hari Terakhir)'}
+                                    {chartMode === 'monthly' && '(30 Hari Terakhir)'}
+                                </span>
+                            </h3>
 
-                            <div className="h-75 w-full">
+                            {/* Mode Toggle */}
+                            <div className="flex bg-slate-100 p-1 rounded-xl">
+                                {CHART_MODES.map((mode) => (
+                                    <button
+                                        key={mode.key}
+                                        onClick={() => handleChartMode(mode)}
+                                        disabled={reportLoading}
+                                        className={cn(
+                                            'px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50',
+                                            chartMode === mode.key
+                                                ? 'bg-white text-indigo-600 shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-700'
+                                        )}
+                                    >
+                                        {mode.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {reportLoading ? (
+                            <div className="h-72 flex items-center justify-center">
+                                <LoadingSpinner />
+                            </div>
+                        ) : chartData.length > 0 ? (
+                            <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={chartData}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -144,6 +166,7 @@ const Dashboard = () => {
                                             tickLine={false}
                                             tick={{ fill: '#94a3b8', fontSize: 12 }}
                                             dy={10}
+                                            interval={chartMode === 'monthly' ? 4 : 0}
                                         />
                                         <YAxis
                                             axisLine={false}
@@ -158,17 +181,35 @@ const Dashboard = () => {
                                                 boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'
                                             }}
                                         />
-                                        <Bar dataKey="pages" name="Pages" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={30} />
+                                        <Bar
+                                            dataKey="pages"
+                                            name="Pages"
+                                            fill="#6366f1"
+                                            radius={[4, 4, 0, 0]}
+                                            barSize={chartMode === 'monthly' ? 10 : 30}
+                                        />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
-                        </section>
-                    )}
+                        ) : (
+                            <div className="h-72 flex items-center justify-center text-slate-400 text-sm">
+                                No data for this period
+                            </div>
+                        )}
+                    </section>
 
                     {/* Recent Reports */}
                     {reports.length > 0 && (
                         <section className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-900 mb-6">Laporan Terbaru</h3>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold text-slate-900">Laporan Terbaru</h3>
+                                <button
+                                    onClick={() => navigate('/reports')}
+                                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+                                >
+                                    View All
+                                </button>
+                            </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead>
@@ -179,12 +220,16 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
-                                        {reports.slice(0, 5).map((report, index) => (
+                                        {reports.filter(r => r.total_pages > 0).slice(0, 5).map((report, index) => (
                                             <tr key={report.id || `report-${index}`} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="py-4 text-sm font-medium text-slate-900">
-                                                    {new Date(report.report_date).toLocaleDateString()}
+                                                    {new Date(report.report_date).toLocaleDateString('id-ID', {
+                                                        weekday: 'short', day: 'numeric', month: 'short'
+                                                    })}
                                                 </td>
-                                                <td className="py-4 text-sm text-slate-500">{report.total_pages}</td>
+                                                <td className="py-4 text-sm font-bold text-indigo-600">
+                                                    {report.total_pages.toLocaleString()}
+                                                </td>
                                                 <td className="py-4 text-sm text-slate-500">{report.printer_count}</td>
                                             </tr>
                                         ))}
