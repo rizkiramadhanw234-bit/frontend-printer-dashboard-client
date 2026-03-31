@@ -46,11 +46,13 @@ export const useReportStore = create((set, get) => ({
                     return { id: date, report_date: date, total_pages: 0, printer_count: 0, bw_pages: 0, color_pages: 0 };
                 }
                 const r = res.value;
-                const totalPages = parseInt(r.totalPages) || 0;
+                const totalPages = parseInt(r.totalPages || r.total_pages) || 0;
                 const printerCount = r.printerCount || (r.byPrinter?.length ?? 0);
 
-                const bwPages = r.byPrinter?.reduce((sum, p) => sum + (parseInt(p.bw_pages) || 0), 0) ?? 0;
-                const colorPages = r.byPrinter?.reduce((sum, p) => sum + (parseInt(p.color_pages) || 0), 0) ?? 0;
+                const colorPages = parseInt(r.totalColorPages || r.colorPages || 0) ||
+                    (r.byPrinter?.reduce((sum, p) => sum + parseInt(p.colorPages || p.color_pages || 0), 0) ?? 0);
+                const bwPages = parseInt(r.totalBwPages || r.bwPages || 0) ||
+                    (r.byPrinter?.reduce((sum, p) => sum + parseInt(p.bwPages || p.bw_pages || 0), 0) ?? 0);
 
                 return {
                     id: date,
@@ -127,6 +129,8 @@ export const useReportStore = create((set, get) => ({
                 month: "short",
             }),
             pages: r.total_pages,
+            color: parseInt(r.color_pages) || 0,
+            bw: parseInt(r.bw_pages) || 0,
         }));
     },
 
@@ -134,12 +138,14 @@ export const useReportStore = create((set, get) => ({
         const report = get().monthlyReport;
         if (!report?.dailyBreakdown) return [];
         return report.dailyBreakdown.map((d) => ({
-            date: new Date(d.print_date).toLocaleDateString("id-ID", {
+            date: new Date(d.print_date || d.printDate).toLocaleDateString("id-ID", {
                 day: "numeric",
                 month: "short",
             }),
-            pages: parseInt(d.total_pages) || 0,
-            printers: d.active_printers || 0,
+            pages: parseInt(d.total_pages || d.totalPages) || 0,
+            printers: d.active_printers || d.activePrinters || 0,
+            color: parseInt(d.color_pages || d.colorPages) || 0,
+            bw: parseInt(d.bw_pages || d.bwPages) || 0,
         }));
     },
 

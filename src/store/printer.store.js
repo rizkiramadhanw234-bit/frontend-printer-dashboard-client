@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { api } from "../services/api";
-import { useAppStore } from "./app.store"; 
+import { useAppStore } from "./app.store";
 
 export const usePrinterStore = create((set, get) => ({
     // ========== STATE ==========
@@ -19,14 +19,13 @@ export const usePrinterStore = create((set, get) => ({
         try {
             set({ isLoading: true, error: null });
 
-            const response = await api.getAllPrinters(); // ← GET /api/printers
+            const response = await api.getAllPrinters();
 
             set({
                 allPrinters: response.printers || [],
                 isLoading: false
             });
 
-            console.log(`✅ Loaded ${response.printers?.length || 0} printers from all agents`);
             return response;
 
         } catch (error) {
@@ -310,16 +309,16 @@ export const usePrinterStore = create((set, get) => ({
 
         // Total pages today
         const totalPagesToday = printers.reduce((sum, p) =>
-            sum + (p.pages_today || 0), 0
+            sum + (p.pages_today || p.pagesToday || 0), 0
         );
 
         // Color/BW breakdown
         const colorPagesToday = printers.reduce((sum, p) =>
-            sum + (p.color_pages_today || 0), 0
+            sum + (p.color_pages_today || p.colorPagesToday || 0), 0
         );
 
         const bwPagesToday = printers.reduce((sum, p) =>
-            sum + (p.bw_pages_today || 0), 0
+            sum + (p.bw_pages_today || p.bwPagesToday || 0), 0
         );
 
         return {

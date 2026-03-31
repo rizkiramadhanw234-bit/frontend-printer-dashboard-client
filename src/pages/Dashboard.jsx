@@ -13,7 +13,8 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer
+    ResponsiveContainer,
+    Legend
 } from 'recharts'
 import { motion } from 'motion/react'
 import StatCard from '../components/StatCard'
@@ -180,11 +181,25 @@ const Dashboard = () => {
                                                 border: 'none',
                                                 boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'
                                             }}
+                                            formatter={(value, name) => [value, name === 'color' ? 'Color' : 'B&W']}
+                                        />
+                                        <Legend 
+                                            wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
+                                            formatter={v => v === 'color' ? 'Color' : 'B&W'} 
                                         />
                                         <Bar
-                                            dataKey="pages"
-                                            name="Pages"
+                                            dataKey="color"
+                                            name="color"
+                                            stackId="a"
                                             fill="#6366f1"
+                                            radius={[0, 0, 0, 0]}
+                                            barSize={chartMode === 'monthly' ? 10 : 30}
+                                        />
+                                        <Bar
+                                            dataKey="bw"
+                                            name="bw"
+                                            stackId="a"
+                                            fill="#374151"
                                             radius={[4, 4, 0, 0]}
                                             barSize={chartMode === 'monthly' ? 10 : 30}
                                         />
