@@ -3,7 +3,7 @@ import { api } from "../services/api";
 import { useAppStore } from "./app.store";
 
 export const usePrinterStore = create((set, get) => ({
-    // ========== STATE ==========
+    //  STATE 
     allPrinters: [],
     agentPrinters: {},
     selectedPrinter: null,
@@ -13,7 +13,7 @@ export const usePrinterStore = create((set, get) => ({
     isLoading: false,
     error: null,
 
-    // ========== ALL PRINTERS ==========
+    //  ALL PRINTERS
 
     fetchAllPrinters: async () => {
         try {
@@ -39,23 +39,17 @@ export const usePrinterStore = create((set, get) => ({
         }
     },
 
-    // ========== AGENT PRINTERS (PAKAI API KEY) ==========
-
     fetchAgentPrinters: async (agentId) => {
         try {
             set({ isLoading: true, error: null });
 
-            // 🔥 Ambil API key dari app store
             const appState = useAppStore.getState();
             let apiKey = appState.agentsWithKeys?.[agentId];
 
-            // Kalau belum ada, ambil dulu dari API
             if (!apiKey) {
-                console.log(`🔑 Fetching API key for agent ${agentId}...`);
                 const keyRes = await api.getAgentApiKey(agentId);
                 apiKey = keyRes.apiKey;
 
-                // Simpan di store
                 useAppStore.setState(state => ({
                     agentsWithKeys: {
                         ...(state.agentsWithKeys || {}),
@@ -75,7 +69,6 @@ export const usePrinterStore = create((set, get) => ({
                 isLoading: false
             }));
 
-            console.log(`✅ Loaded ${response.printers?.length || 0} printers for agent ${agentId}`);
             return response;
 
         } catch (error) {
@@ -88,13 +81,12 @@ export const usePrinterStore = create((set, get) => ({
         }
     },
 
-    // ========== SINGLE PRINTER (PAKAI API KEY) ==========
+    //  SINGLE PRINTER
 
     fetchAgentPrinter: async (agentId, printerName) => {
         try {
             set({ isLoading: true, error: null });
 
-            // 🔥 Ambil API key
             const appState = useAppStore.getState();
             let apiKey = appState.agentsWithKeys?.[agentId];
 
@@ -117,7 +109,6 @@ export const usePrinterStore = create((set, get) => ({
                 isLoading: false
             });
 
-            console.log(`✅ Loaded printer ${printerName} from agent ${agentId}`);
             return response;
 
         } catch (error) {
@@ -131,7 +122,7 @@ export const usePrinterStore = create((set, get) => ({
         }
     },
 
-    // ========== PRINTER LIFETIME REPORT ==========
+    //  PRINTER LIFETIME REPORT 
 
     fetchPrinterLifetimeReport: async (printerName) => {
         try {
@@ -147,7 +138,6 @@ export const usePrinterStore = create((set, get) => ({
                 isLoading: false
             }));
 
-            console.log(`✅ Loaded lifetime report for ${printerName}`);
             return response;
 
         } catch (error) {
@@ -160,7 +150,7 @@ export const usePrinterStore = create((set, get) => ({
         }
     },
 
-    // ========== PRINTER CONTROL (PAKAI API KEY) ==========
+    //  PRINTER CONTROL 
 
     pausePrinter: async (agentId, printerName) => {
         try {
@@ -174,7 +164,6 @@ export const usePrinterStore = create((set, get) => ({
             // Refresh printer data after pause
             await get().fetchAgentPrinter(agentId, printerName);
 
-            console.log(`✅ Paused printer ${printerName}`);
             return response;
 
         } catch (error) {
@@ -195,7 +184,6 @@ export const usePrinterStore = create((set, get) => ({
             // Refresh printer data after resume
             await get().fetchAgentPrinter(agentId, printerName);
 
-            console.log(`✅ Resumed printer ${printerName}`);
             return response;
 
         } catch (error) {
@@ -204,11 +192,9 @@ export const usePrinterStore = create((set, get) => ({
         }
     },
 
-    // ========== GETTERS ==========
-
+    //  GETTERS 
     getPrintersWithLowInk: () => {
         return get().allPrinters.filter(p => {
-            // 🔥 PAKAI snake_case!
             if (p.low_ink_colors && p.low_ink_colors.length > 0) return true;
 
             if (!p.ink_levels) return false;
@@ -226,7 +212,6 @@ export const usePrinterStore = create((set, get) => ({
 
     getPrintersWithCriticalInk: () => {
         return get().allPrinters.filter(p => {
-            // 🔥 PAKAI snake_case!
             if (p.printer_status_detail === 'no_ink') return true;
 
             if (!p.ink_levels) return false;
@@ -242,7 +227,7 @@ export const usePrinterStore = create((set, get) => ({
         });
     },
 
-    // ========== STATISTICS ==========
+    //  STATISTICS 
     getAllPrintersStatistics: () => {
         const printers = get().allPrinters;
 
@@ -263,11 +248,9 @@ export const usePrinterStore = create((set, get) => ({
             p.status === "PRINTING" || p.printer_status_detail === 'printing'
         ).length;
 
-        // 🔥 HITUNG LOW INK - PAKAI snake_case!
         const lowInk = printers.filter(p => {
             if (p.printer_status_detail === 'low_ink') return true;
             if (p.low_ink_colors && p.low_ink_colors.length > 0) {
-                // Parse ink_levels dulu
                 const inkLevels = typeof p.ink_levels === 'string'
                     ? JSON.parse(p.ink_levels)
                     : p.ink_levels || {};
@@ -277,7 +260,6 @@ export const usePrinterStore = create((set, get) => ({
             return false;
         }).length;
 
-        // 🔥 HITUNG CRITICAL INK - PAKAI snake_case!
         const criticalInk = printers.filter(p => {
             if (p.printer_status_detail === 'no_ink') return true;
 
@@ -339,12 +321,11 @@ export const usePrinterStore = create((set, get) => ({
         };
     },
 
-    // ========== UTILS ==========
+    //  UTILS 
 
     refresh: async () => {
         await get().fetchAllPrinters();
 
-        // Refresh juga agent printers untuk agent yang sedang dipilih
         const { selectedAgentId } = useAppStore.getState();
         if (selectedAgentId) {
             await get().fetchAgentPrinters(selectedAgentId);

@@ -22,7 +22,6 @@ class WebSocketService {
       this.socket = new WebSocket(this.wsUrl)
 
       this.socket.onopen = () => {
-        console.log('✅ WebSocket connected')
         this.reconnectAttempts = 0
         this.isConnecting = false
         this.startHeartbeat()
@@ -32,7 +31,7 @@ class WebSocketService {
       this.socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          
+
           if (data.event === 'printer_status_update' || data.event === 'printer_ink_update') {
             this.notifySubscribers('printers', data)
           } else if (data.event === 'agent_connected' || data.event === 'agent_disconnected') {
@@ -46,13 +45,12 @@ class WebSocketService {
       }
 
       this.socket.onerror = (error) => {
-        console.error('❌ WebSocket error:', error)
+        console.error('WebSocket error:', error)
         this.isConnecting = false
         this.notifySubscribers('connection', { type: 'error', error })
       }
 
       this.socket.onclose = (event) => {
-        console.log('🔌 WebSocket disconnected')
         this.isConnecting = false
         this.stopHeartbeat()
         this.notifySubscribers('connection', { type: 'disconnected' })

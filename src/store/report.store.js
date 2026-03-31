@@ -88,7 +88,6 @@ export const useReportStore = create((set, get) => ({
         }
     },
 
-    // ── Fetch single day detail ────────────────────────────────────────────────
     fetchDailyDetail: async (date) => {
         try {
             set({ isLoading: true, error: null });
@@ -105,7 +104,6 @@ export const useReportStore = create((set, get) => ({
         }
     },
 
-    // ── Fetch monthly ──────────────────────────────────────────────────────────
     fetchMonthlyReport: async (year, month) => {
         try {
             set({ isLoading: true, error: null });
@@ -121,7 +119,6 @@ export const useReportStore = create((set, get) => ({
         }
     },
 
-    // ── Chart helpers ──────────────────────────────────────────────────────────
     getChartData: () => {
         return get().reports.map((r) => ({
             date: new Date(r.report_date).toLocaleDateString("id-ID", {
@@ -149,11 +146,9 @@ export const useReportStore = create((set, get) => ({
         }));
     },
 
-    // ── Pagination ─────────────────────────────────────────────────────────────
     goToPage: (page) =>
         set((state) => ({ pagination: { ...state.pagination, page } })),
 
-    // ── Reset ──────────────────────────────────────────────────────────────────
     reset: () =>
         set({
             reports: [],

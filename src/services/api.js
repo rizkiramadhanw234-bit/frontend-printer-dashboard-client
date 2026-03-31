@@ -37,17 +37,17 @@ async function fetchAPI(endpoint, options = {}) {
 }
 
 export const api = {
-    // ── AUTH ───────────────────────────────────────────────────────────────────
+    //  AUTH 
     login: (agentId, apiKey) =>
         fetchAPI('/api/agents/agent-login', {
             method: 'POST',
             body: JSON.stringify({ agent_id: agentId, api_key: apiKey }),
         }),
 
-    // ── AGENT ──────────────────────────────────────────────────────────────────
+    //  AGENT 
     getAgent: (agentId) => fetchAPI(`/api/agents/${agentId}`),
 
-    // ── PRINTERS ───────────────────────────────────────────────────────────────
+    //  PRINTERS 
     getAgentPrinters: (agentId, apiKey) => {
         const url = `${API_URL}/api/agents/${agentId}/printers`
         return fetch(url, {
@@ -70,7 +70,7 @@ export const api = {
             body: JSON.stringify({ printerName }),
         }),
 
-    // ── REPORTS ────────────────────────────────────────────────────────────────
+    //  REPORTS 
     getDailyReport: (params = {}) => {
         const query = new URLSearchParams()
         if (params.date) query.append('date', params.date)

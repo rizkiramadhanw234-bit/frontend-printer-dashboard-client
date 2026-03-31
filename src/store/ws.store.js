@@ -11,21 +11,21 @@ export const useWebSocketStore = create((set, get) => ({
   connect: () => {
     const cleanupConnection = wsService.subscribeToConnection((data) => {
       if (data.type === 'connected') {
-        set({ 
-          isConnected: true, 
+        set({
+          isConnected: true,
           connectionStatus: 'connected',
           error: null,
           lastUpdateTime: Date.now()
         })
       } else if (data.type === 'disconnected') {
-        set({ 
-          isConnected: false, 
+        set({
+          isConnected: false,
           connectionStatus: 'disconnected',
           lastUpdateTime: Date.now()
         })
       } else if (data.type === 'error') {
-        set({ 
-          isConnected: false, 
+        set({
+          isConnected: false,
           connectionStatus: 'error',
           error: data.error,
           lastUpdateTime: Date.now()
@@ -60,7 +60,6 @@ export const useWebSocketStore = create((set, get) => ({
     const lastUpdate = get().lastUpdateTime
 
     if (now - lastUpdate < 1000) {
-      console.log('Rate limited')
       return false
     }
 

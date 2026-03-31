@@ -8,7 +8,6 @@ export const PRINTER_STATUS = {
   WARNING: 'WARNING'
 }
 
-// 🔥 TAMBAHKAN STATUS DETAIL DARI BACKEND
 export const PRINTER_STATUS_DETAIL = {
   READY: 'ready',
   PRINTING: 'printing',

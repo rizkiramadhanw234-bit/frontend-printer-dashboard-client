@@ -35,7 +35,6 @@ const PrinterCard = ({ printer, onClick }) => {
   }
   const hasInkData = Object.keys(inkLevels).length > 0
 
-  // Color/BW data — support both snake_case and camelCase
   const pagesToday = printer.pages_today ?? printer.pagesToday ?? 0
   const colorPagesToday = printer.color_pages_today ?? printer.colorPagesToday ?? 0
   const bwPagesToday = printer.bw_pages_today ?? printer.bwPagesToday ?? 0

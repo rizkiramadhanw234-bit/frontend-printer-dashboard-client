@@ -13,7 +13,7 @@ export const useAgentStore = create((set, get) => ({
     loadAgentData: async () => {
         const { agentId } = useAuthStore.getState()
         if (!agentId) {
-            console.warn('❌ No agentId found')
+            console.warn('No agentId found')
             return
         }
 
@@ -21,10 +21,8 @@ export const useAgentStore = create((set, get) => ({
 
         try {
             const response = await api.getAgent(agentId)
-            console.log('🔥 RAW getAgent response:', response)
-            
+
             if (response.printers?.length > 0) {
-                console.log('📦 Printer pertama (asli):', response.printers[0])
             }
 
             if (response.success) {
@@ -43,10 +41,9 @@ export const useAgentStore = create((set, get) => ({
                     isLoading: false
                 })
 
-                console.log('✅ Printers setelah normalisasi:', normalizedPrinters)
             }
         } catch (error) {
-            console.error('❌ loadAgentData error:', error)
+            console.error('loadAgentData error:', error)
             set({ error: error.message, isLoading: false })
         }
     },
@@ -62,7 +59,6 @@ export const useAgentStore = create((set, get) => ({
         let lowInk = 0
         let criticalInk = 0
 
-        // Hitung low ink dan critical ink dari printer
         printers.forEach(p => {
             if (p.printer_status_detail === 'no_ink') {
                 criticalInk++
@@ -82,7 +78,6 @@ export const useAgentStore = create((set, get) => ({
             }
         })
 
-        // 🔥 Gunakan statistics.totalPagesToday untuk pagesToday
         const pagesToday = statistics.totalPagesToday || 0
 
         return {
